@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ForgeWatch AI | Industrial SCADA & 3D Digital Twin Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Three.js & OrbitControls for real interactive 3D Factory Floor -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-subtle: #f1f5f9;
+      --border: #e2e8f0;
+      --border-focus: #cbd5e1;
+      
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+
+      --blue: #2563eb;
+      --blue-subtle: #eff6ff;
+      --blue-border: #bfdbfe;
+
+      --green: #059669;
+      --green-subtle: #ecfdf5;
+      --green-border: #a7f3d0;
+
+      --amber: #d97706;
+      --amber-subtle: #fffbeb;
+      --amber-border: #fde68a;
+
+      --red: #dc2626;
+      --red-subtle: #fef2f2;
+      --red-border: #fecaca;
+
+      --indigo: #4f46e5;
+      --indigo-subtle: #eef2ff;
+      --indigo-border: #c7d2fe;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+      --shadow-3d: 0 12px 24px -4px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+
+      --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.03) 0%, transparent 45%),
+        radial-gradient(circle at 100% 100%, rgba(5, 150, 105, 0.03) 0%, transparent 45%),
+        linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+        linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body.emergency-active {
+      animation: emergencyPulse 1.2s infinite alternate;
+    }
+    @keyframes emergencyPulse {
+      0% { box-shadow: inset 0 0 40px rgba(220, 38, 38, 0.2); }
+      100% { box-shadow: inset 0 0 100px rgba(220, 38, 38, 0.5); }
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 24px 48px;
+    }
+
+    /* SVG ICON UTILITY */
+    .icon {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      vertical-align: middle;
+      stroke-width: 2;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    /* TOP HEADER */
+    .header {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+      stroke: #fff;
+    }
+
+    .brand-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.6px;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+    .brand-title span {
+      color: var(--blue);
+    }
+    .brand-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      background: var(--green-subtle);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+    }
+    .dot-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+
+    .btn {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+    .btn-secondary {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-secondary:hover {
+      background: var(--surface-subtle);
+      border-color: var(--border-focus);
+      transform: translateY(-1px);
+    }
+    .btn-secondary.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-danger {
+      background: var(--red-subtle);
+      border-color: var(--red-border);
+      color: var(--red);
+    }
+    .btn-danger:hover {
+      background: var(--red);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* CARD SYSTEM */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      position: relative;
+    }
+    .card:hover {
+      box-shadow: var(--shadow-3d);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
+    }
+    .card-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    /* HERO STRIP: RADIAL SAFETY SCORE + KPIS */
+    .hero-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .score-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .radial-container {
+      position: relative;
+      width: 170px;
+      height: 170px;
+      margin: 10px 0;
+    }
+    .radial-container svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .radial-container circle {
+      fill: none;
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+    .radial-track {
+      stroke: #e2e8f0;
+    }
+    .radial-progress {
+      stroke: var(--blue);
+      stroke-dasharray: 440;
+      stroke-dashoffset: 44;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.4s;
+    }
+    .radial-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .score-num {
+      font-size: 42px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      letter-spacing: -1.5px;
+      line-height: 1;
+    }
+    .score-label {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .score-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 999px;
+      margin-top: 8px;
+    }
+
+    .breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+      margin-top: 16px;
+    }
+    .breakdown-box {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .breakdown-lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .breakdown-val {
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text-main);
+      margin-top: 2px;
+    }
+
+    /* KPI STRIP */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .kpi-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 22px;
+    }
+    .kpi-title {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .kpi-big {
+      font-size: 44px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      letter-spacing: -2px;
+      line-height: 1;
+      margin: 12px 0 6px;
+      color: var(--text-main);
+    }
+    .kpi-subtext {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .stepper-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.15s;
+    }
+    .stepper-btn:hover {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    /* 3D FACTORY FLOOR DIGITAL TWIN STAGE */
+    .stage-card {
+      margin-bottom: 24px;
+      overflow: hidden;
+      padding: 0;
+    }
+    .stage-toolbar {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .view-toggles {
+      display: flex;
+      gap: 6px;
+      background: var(--surface-subtle);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .view-btn {
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .view-btn.active {
+      background: var(--surface);
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    #threeCanvasContainer {
+      width: 100%;
+      height: 420px;
+      background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+      position: relative;
+      cursor: grab;
+    }
+    #threeCanvasContainer:active { cursor: grabbing; }
+
+    .stage-overlay-legend {
+      position: absolute;
+      bottom: 16px;
+      left: 20px;
+      display: flex;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      box-shadow: var(--shadow-sm);
+      pointer-events: none;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-box { width: 10px; height: 10px; border-radius: 3px; }
+
+    .stage-hint {
+      position: absolute;
+      bottom: 16px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* ADAPTIVE ENVIRONMENTAL CAPACITY ENGINE */
+    .adaptive-card {
+      margin-bottom: 24px;
+      border-left: 4px solid var(--blue);
+      background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+    }
+    .adaptive-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 14px;
+    }
+    .zone-adaptive-box {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ENVIRONMENTAL TELEMETRY TILES */
+    .zones-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .telemetry-tile {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .telemetry-tile:hover {
+      border-color: var(--border-focus);
+      background: #ffffff;
+      box-shadow: var(--shadow-sm);
+    }
+    .tile-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .tile-value {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: block;
+    }
+    .tile-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-top: 6px;
+    }
+
+    /* ML PREDICTIVE ANALYTICS SECTION */
+    .ml-card {
+      margin-bottom: 24px;
+      background: linear-gradient(180deg, #ffffff 0%, #faf5ff 100%);
+      border: 1px solid #e9d5ff;
+    }
+    .ml-flex {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 20px;
+      margin-top: 16px;
+    }
+    .forecast-boxes {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .horizon-tile {
+      background: #ffffff;
+      border: 1px solid #e9d5ff;
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .horizon-tile span {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      display: block;
+    }
+    .horizon-tile b {
+      font-family: var(--font-mono);
+      font-size: 28px;
+      color: var(--indigo);
+      display: block;
+      margin: 8px 0 4px;
+    }
+    .horizon-tile small {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .radar-card {
+      background: #ffffff;
+      border: 1px solid #e9d5ff;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* CHARTS & LIVE AUDIT FEED */
+    .lower-row {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .chart-container {
+      height: 300px;
+      position: relative;
+      margin-top: 14px;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .feed-container {
+      max-height: 380px;
+      overflow-y: auto;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+    .feed-container::-webkit-scrollbar { width: 5px; }
+    .feed-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+    .feed-row {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.15s;
+    }
+    .feed-row:hover { background: #ffffff; box-shadow: var(--shadow-sm); }
+    .feed-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar-initials {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: #e2e8f0;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+    .feed-type {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .type-entry { background: var(--green-subtle); color: var(--green); border: 1px solid var(--green-border); }
+    .type-exit { background: var(--blue-subtle); color: var(--blue); border: 1px solid var(--blue-border); }
+    .type-alarm { background: var(--red-subtle); color: var(--red); border: 1px solid var(--red-border); }
+
+    .feed-user { font-size: 13px; font-weight: 700; color: var(--text-main); }
+    .feed-details { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+    .feed-timestamp { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); }
+
+    /* FOOTER */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 1024px) {
+      .hero-layout, .zones-row, .lower-row, .ml-flex, .adaptive-grid { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .kpi-grid, .telemetry-grid, .forecast-boxes { grid-template-columns: 1fr 1fr; }
+      .container { padding: 14px; }
+      #threeCanvasContainer { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- TOP HEADER -->
+    <header class="header">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+          <div class="brand-title">FORGE<span>WATCH AI</span></div>
+          <div class="brand-sub">Autonomous Telemetry & 3D Industrial Matrix</div>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <div class="badge-status" id="serverBadge">
+          <div class="dot-pulse"></div>
+          <span id="serverStatusText">LAN ENGINE ONLINE</span>
+        </div>
+
+        <button class="btn btn-secondary" id="voiceBtn" onclick="toggleVoice()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          Voice Announcer: <span id="voiceStatus">OFF</span>
+        </button>
+
+        <button class="btn btn-secondary" onclick="exportCsv()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export Audit (CSV)
+        </button>
+
+        <button class="btn btn-danger" id="sosBtn" onclick="toggleEmergency()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          EMERGENCY SOS
+        </button>
+      </div>
+    </header>
+
+    <!-- HERO METRICS STRIP -->
+    <section class="hero-layout">
+      <!-- 3D Circular Safety Score -->
+      <div class="card score-card">
+        <div class="card-title" style="color: var(--blue);">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Factory Safety Index
+        </div>
+
+        <div class="radial-container">
+          <svg viewBox="0 0 160 160">
+            <circle class="radial-track" cx="80" cy="80" r="70"></circle>
+            <circle class="radial-progress" id="scoreRing" cx="80" cy="80" r="70"></circle>
+          </svg>
+          <div class="radial-center">
+            <div class="score-num" id="scoreVal">--</div>
+            <div class="score-label">OUT OF 100</div>
+          </div>
+        </div>
+
+        <div class="score-badge" id="scoreTierBadge">CALCULATING...</div>
+
+        <div class="breakdown-grid">
+          <div class="breakdown-box">
+            <div class="breakdown-lbl">Occupancy</div>
+            <div class="breakdown-val" id="bdOcc">--%</div>
+          </div>
+          <div class="breakdown-box">
+            <div class="breakdown-lbl">Thermal Load</div>
+            <div class="breakdown-val" id="bdTherm">--%</div>
+          </div>
+          <div class="breakdown-box">
+            <div class="breakdown-lbl">Lighting</div>
+            <div class="breakdown-val" id="bdLight">--%</div>
+          </div>
+          <div class="breakdown-box">
+            <div class="breakdown-lbl">ESP32 Nodes</div>
+            <div class="breakdown-val" id="bdConn">--%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live KPI Matrix -->
+      <div class="kpi-grid">
+        <div class="card kpi-box">
+          <div class="kpi-title">
+            <span>Workforce Present</span>
+            <span style="color: var(--blue);">LIVE</span>
+          </div>
+          <div class="kpi-big" id="kpiTotal">0</div>
+          <div class="kpi-subtext" id="kpiBreakdown">Across 2 active factory bays</div>
+        </div>
+
+        <div class="card kpi-box">
+          <div class="kpi-title">
+            <span>Overcrowding Alerts</span>
+            <span id="kpiAlertPill" style="color: var(--green);">NOMINAL</span>
+          </div>
+          <div class="kpi-big" id="kpiAlertCount">0</div>
+          <div class="kpi-subtext">Active zone threshold warnings</div>
+        </div>
+
+        <div class="card kpi-box">
+          <div class="kpi-title">
+            <span>Base Design Cap</span>
+            <span>MAX LIMIT</span>
+          </div>
+          <div class="kpi-big" id="kpiCap">10</div>
+          <div class="stepper">
+            <button class="stepper-btn" onclick="tuneCapacity(-1)">-</button>
+            <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">BASE (5-10)</span>
+            <button class="stepper-btn" onclick="tuneCapacity(1)">+</button>
+          </div>
+        </div>
+
+        <div class="card kpi-box">
+          <div class="kpi-title">
+            <span>Dual Node Link</span>
+            <span>TELEMETRY</span>
+          </div>
+          <div class="kpi-big" id="kpiNodes">--/2</div>
+          <div class="kpi-subtext" id="kpiNodesSub">Node 1: -- · Node 2: --</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADAPTIVE ENVIRONMENTAL CAPACITY ENGINE (5 - 10 DYNAMIC SCALE) -->
+    <section class="card adaptive-card">
+      <div class="card-header" style="margin-bottom: 8px;">
+        <div class="card-title" style="color: var(--green);">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Adaptive Environmental Capacity Engine (5 to 10 Scale)
+        </div>
+        <span class="card-tag" style="background: var(--green-subtle); color: var(--green); border-color: var(--green-border);">INDEPENDENT ZONE ADAPTATION</span>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+        Capacity is not static. Real-time temperature, humidity, and illumination dynamically scale allowed personnel between <strong>5 and 10 workers</strong> per zone to enforce OSHA thermal ergonomics.
+      </div>
+
+      <div class="adaptive-grid">
+        <!-- Zone 1 Adaptive Card -->
+        <div class="zone-adaptive-box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="color: var(--blue); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--blue);"></span>
+              ZONE 01: HEAVY FORGE BAY
+            </strong>
+            <span id="z1DynStatus" class="tile-badge" style="background: var(--blue-subtle); color: var(--blue);">OPTIMAL</span>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;">
+            <span style="font-size: 38px; font-weight: 800; font-family: var(--font-mono); color: var(--text-main);" id="z1DynCap">--</span>
+            <span style="font-size: 13px; color: var(--text-muted);">Allowed Workers (Base: <span class="base-cap-span">10</span>)</span>
+          </div>
+          <div id="z1PenaltiesList" style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+            <div>Connecting to thermal sensors...</div>
+          </div>
+        </div>
+
+        <!-- Zone 2 Adaptive Card -->
+        <div class="zone-adaptive-box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="color: var(--green); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--green);"></span>
+              ZONE 02: CNC & ROBOTICS BAY
+            </strong>
+            <span id="z2DynStatus" class="tile-badge" style="background: var(--green-subtle); color: var(--green);">OPTIMAL</span>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;">
+            <span style="font-size: 38px; font-weight: 800; font-family: var(--font-mono); color: var(--text-main);" id="z2DynCap">--</span>
+            <span style="font-size: 13px; color: var(--text-muted);">Allowed Workers (Base: <span class="base-cap-span">10</span>)</span>
+          </div>
+          <div id="z2PenaltiesList" style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+            <div>Connecting to optical sensors...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REAL 3D FACTORY FLOOR DIGITAL TWIN STAGE -->
+    <section class="card stage-card">
+      <div class="stage-toolbar">
+        <div class="card-title">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          Interactive 3D Factory Digital Twin (WebGL Real-Time Stage)
+        </div>
+        <div class="view-toggles">
+          <button class="view-btn active" id="btn3dIso" onclick="set3DCamera('iso')">Isometric 3D</button>
+          <button class="view-btn" id="btn3dTop" onclick="set3DCamera('top')">Top Ortho</button>
+          <button class="view-btn" id="btn3dZ1" onclick="set3DCamera('z1')">Zone 1 Forge</button>
+          <button class="view-btn" id="btn3dZ2" onclick="set3DCamera('z2')">Zone 2 CNC</button>
+          <button class="view-btn" onclick="reset3DCamera()">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5"/></svg>
+            Reset View
+          </button>
+        </div>
+      </div>
+
+      <div id="threeCanvasContainer">
+        <!-- 3D Scene rendered dynamically by Three.js -->
+        <div class="stage-overlay-legend">
+          <div class="legend-item"><div class="legend-box" style="background: #2563eb;"></div> Zone 1: Blast Furnace Bay</div>
+          <div class="legend-item"><div class="legend-box" style="background: #059669;"></div> Zone 2: Robotic Machining Bay</div>
+          <div class="legend-item"><div class="legend-box" style="background: #f59e0b;"></div> Personnel 3D Avatar</div>
+        </div>
+        <div class="stage-hint">Interactive: Drag to Rotate · Scroll to Zoom · Right-Click to Pan</div>
+      </div>
+    </section>
+
+    <!-- ENVIRONMENTAL TELEMETRY PANELS (ZONE 1 & ZONE 2) -->
+    <section class="zones-row">
+      <!-- Zone 1 Telemetry Card -->
+      <div class="card" id="z1Card">
+        <div class="card-header">
+          <div class="card-title">
+            <span style="color: var(--blue); font-size: 18px;">●</span> ZONE 01: HEAVY FORGE BAY
+          </div>
+          <span class="card-tag" id="z1NodeTag">ESP32 NODE 1: ONLINE</span>
+        </div>
+
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+          Occupancy: <strong id="z1Occupancy" style="color: var(--text-main); font-size: 18px;">0</strong> / <span id="z1OccupancyMax" style="font-weight: 700; color: var(--blue);">10</span> Personnel (Dynamic Limit)
+        </div>
+
+        <div class="telemetry-grid">
+          <div class="telemetry-tile">
+            <span class="tile-label">TEMPERATURE</span>
+            <span class="tile-value" id="z1Temp">--°C</span>
+            <span class="tile-badge" style="background: var(--blue-subtle); color: var(--blue);">DHT11</span>
+          </div>
+          <div class="telemetry-tile">
+            <span class="tile-label">HUMIDITY</span>
+            <span class="tile-value" id="z1Hum">--%</span>
+            <span class="tile-badge" style="background: var(--indigo-subtle); color: var(--indigo);">RELATIVE</span>
+          </div>
+          <div class="telemetry-tile">
+            <span class="tile-label">HEAT INDEX</span>
+            <span class="tile-value" id="z1Heat">--°C</span>
+            <span class="tile-badge" id="z1HeatBadge" style="background: var(--green-subtle); color: var(--green);">OPTIMAL</span>
+          </div>
+          <div class="telemetry-tile">
+            <span class="tile-label">LIGHTING (LDR)</span>
+            <span class="tile-value" id="z1Light">--</span>
+            <span class="tile-badge" id="z1LightBadge" style="background: var(--surface-subtle); color: var(--text-muted);">ADC</span>
+          </div>
+        </div>
+
+        <p style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 14px;" id="z1Advice">
+          Ergonomic parameters nominal. Normal work cycles permitted.
+        </p>
+      </div>
+
+      <!-- Zone 2 Telemetry Card -->
+      <div class="card" id="z2Card">
+        <div class="card-header">
+          <div class="card-title">
+            <span style="color: var(--green); font-size: 18px;">●</span> ZONE 02: CNC & ROBOTICS BAY
+          </div>
+          <span class="card-tag" id="z2NodeTag">ESP32 NODE 2: ONLINE</span>
+        </div>
+
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+          Occupancy: <strong id="z2Occupancy" style="color: var(--text-main); font-size: 18px;">0</strong> / <span id="z2OccupancyMax" style="font-weight: 700; color: var(--green);">10</span> Personnel (Dynamic Limit)
+        </div>
+
+        <div class="telemetry-grid">
+          <div class="telemetry-tile">
+            <span class="tile-label">TEMPERATURE</span>
+            <span class="tile-value" id="z2Temp">--°C</span>
+            <span class="tile-badge" style="background: var(--green-subtle); color: var(--green);">DHT11</span>
+          </div>
+          <div class="telemetry-tile">
+            <span class="tile-label">HUMIDITY</span>
+            <span class="tile-value" id="z2Hum">--%</span>
+            <span class="tile-badge" style="background: var(--indigo-subtle); color: var(--indigo);">RELATIVE</span>
+          </div>
+          <div class="telemetry-tile">
+            <span class="tile-label">HEAT INDEX</span>
+            <span class="tile-value" id="z2Heat">--°C</span>
+            <span class="tile-badge" id="z2HeatBadge" style="background: var(--green-subtle); color: var(--green);">OPTIMAL</span>
+          </div>
+          <div class="telemetry-tile">
+            <span class="tile-label">LIGHTING (LDR)</span>
+            <span class="tile-value" id="z2Light">--</span>
+            <span class="tile-badge" id="z2LightBadge" style="background: var(--surface-subtle); color: var(--text-muted);">ADC</span>
+          </div>
+        </div>
+
+        <p style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 14px;" id="z2Advice">
+          Ergonomic parameters nominal. Normal work cycles permitted.
+        </p>
+      </div>
+    </section>
+
+    <!-- SCIKIT-LEARN ML OCCUPANCY FORECAST MATRIX -->
+    <section class="card ml-card">
+      <div class="card-header">
+        <div class="card-title" style="color: var(--indigo);">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
+          Scikit-Learn Weighted Ridge Regression Engine (Occupancy Forecasting)
+        </div>
+        <span class="card-tag">MODEL: RIDGE REGRESSOR</span>
+      </div>
+
+      <div class="ml-flex">
+        <div>
+          <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); font-weight: 600; margin-bottom: 12px;">
+            PROJECTED TOTAL PLANT WORKFORCE
+          </div>
+          <div class="forecast-boxes">
+            <div class="horizon-tile">
+              <span>+5 MIN</span>
+              <b id="ml5m">--</b>
+              <small id="ml5mSub">Projected</small>
+            </div>
+            <div class="horizon-tile">
+              <span>+10 MIN</span>
+              <b id="ml10m">--</b>
+              <small id="ml10mSub">Projected</small>
+            </div>
+            <div class="horizon-tile">
+              <span>+15 MIN</span>
+              <b id="ml15m">--</b>
+              <small id="ml15mSub">Projected</small>
+            </div>
+            <div class="horizon-tile">
+              <span>+30 MIN</span>
+              <b id="ml30m">--</b>
+              <small id="ml30mSub">Damped</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="radar-card">
+          <div style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase; font-weight: 700;">
+            Predictive Health & Crowd Surge Radar
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin: 12px 0 6px;">
+            <span style="font-size: 14px; font-weight: 700;">Model Confidence:</span>
+            <span style="font-size: 22px; font-weight: 800; font-family: var(--font-mono); color: var(--green);" id="mlConf">--%</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            <span style="font-size: 14px; font-weight: 700;">Crowd Surge Risk:</span>
+            <span style="font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--blue);" id="mlRisk">NOMINAL</span>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+            Exponential temporal weighting captures arrival bursts from RFID events and forecasts forward trends.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORICAL TELEMETRY CHART & LIVE AUDIT FEED -->
+    <section class="lower-row">
+      <!-- Canvas History Chart -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M3 3v18h18M18 9l-5 5-4-4-6 6"/></svg>
+            Multi-Zone Occupancy Telemetry Stream (Last 60 Minutes)
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span class="card-tag" style="color: var(--blue);">Zone 1</span>
+            <span class="card-tag" style="color: var(--green);">Zone 2</span>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="historyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Live Activity Stream -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
+            Live Access & Event Stream
+          </div>
+          <span class="card-tag">AUDIT TRAIL</span>
+        </div>
+        <ul class="feed-container" id="eventFeed">
+          <li class="feed-row">
+            <span class="feed-user">Connecting to event stream...</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div>FORGEWATCH AI · ENTERPRISE SHOP-FLOOR SCADA MATRIX · DUAL ESP32 NODES</div>
+      <div id="footerSync">LAST SYNC: --:--:--</div>
+    </footer>
+
+  </div>
+
+  <script>
+    // --- STATE VARIABLES ---
+    let voiceActive = false;
+    let synth = window.speechSynthesis;
+    let audioCtx = null;
+    let currentCapacity = 10;
+    let lastEventSeen = null;
+
+    // --- THREE.JS 3D FACTORY FLOOR SETUP ---
+    let scene, camera, renderer, controls;
+    let z1RoomMesh, z2RoomMesh;
+    let z1Light, z2Light;
+    let workerMeshes = { z1: [], z2: [] };
+    let roboticArmGroup = null;
+    let beaconZ1 = null, beaconZ2 = null;
+
+    function init3DScene() {
+      const container = document.getElementById('threeCanvasContainer');
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf1f5f9);
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 1000);
+      camera.position.set(24, 22, 28);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // OrbitControls
+      if (typeof THREE.OrbitControls !== 'undefined') {
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2.05;
+        controls.target.set(0, 0, 0);
+      }
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
+      dirLight.position.set(25, 35, 18);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      scene.add(dirLight);
+
+      // Factory Base Floor with Grid
+      const floorGeo = new THREE.PlaneGeometry(40, 26);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.8 });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      const grid = new THREE.GridHelper(40, 40, 0xcbd5e1, 0xe2e8f0);
+      grid.position.y = 0.01;
+      scene.add(grid);
+
+      // Perimeter Steel Trusses & Guard Railings
+      createSteelColumns();
+
+      // Zone 1: Heavy Forge (Left Bay)
+      const z1Geo = new THREE.BoxGeometry(16, 0.25, 20);
+      const z1Mat = new THREE.MeshStandardMaterial({ color: 0xdbeafe, roughness: 0.5 });
+      z1RoomMesh = new THREE.Mesh(z1Geo, z1Mat);
+      z1RoomMesh.position.set(-9, 0.125, 0);
+      z1RoomMesh.receiveShadow = true;
+      scene.add(z1RoomMesh);
+
+      // 3D Blast Furnace Assembly
+      createBlastFurnace(-12, 0, -4);
+
+      // Zone 1 Spot Light
+      z1Light = new THREE.PointLight(0x2563eb, 1.2, 22);
+      z1Light.position.set(-9, 7, 0);
+      scene.add(z1Light);
+
+      // Zone 1 Overhead Siren Beacon
+      beaconZ1 = createBeaconLight(-9, 7.5, 0);
+
+      // Zone 2: Precision CNC (Right Bay)
+      const z2Geo = new THREE.BoxGeometry(16, 0.25, 20);
+      const z2Mat = new THREE.MeshStandardMaterial({ color: 0xdcfce7, roughness: 0.5 });
+      z2RoomMesh = new THREE.Mesh(z2Geo, z2Mat);
+      z2RoomMesh.position.set(9, 0.125, 0);
+      z2RoomMesh.receiveShadow = true;
+      scene.add(z2RoomMesh);
+
+      // 3D CNC Machine & Articulated Robotic Arm Assembly
+      createCNCMill(12, 0, -5);
+      createRoboticArm(7, 0, -3);
+
+      // Zone 2 Spot Light
+      z2Light = new THREE.PointLight(0x059669, 1.2, 22);
+      z2Light.position.set(9, 7, 0);
+      scene.add(z2Light);
+
+      // Zone 2 Overhead Siren Beacon
+      beaconZ2 = createBeaconLight(9, 7.5, 0);
+
+      // Turnstile RFID Scanner Access Gates
+      createTurnstilePillar(-1.2, 0, 8.5, 0x2563eb);
+      createTurnstilePillar(1.2, 0, 8.5, 0x059669);
+
+      // Resize listener
+      window.addEventListener('resize', on3DWindowResize);
+
+      // Render Loop
+      animate3D();
+    }
+
+    // --- DETAILED 3D INDUSTRIAL EQUIPMENT BUILDERS ---
+    function createBlastFurnace(x, y, z) {
+      const group = new THREE.Group();
+      // Main Body
+      const bodyGeo = new THREE.CylinderGeometry(2.2, 2.8, 5.5, 24);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 2.75;
+      body.castShadow = true;
+      group.add(body);
+
+      // Metallic Ring Bands
+      for (let i = 0; i < 3; i++) {
+        const ringGeo = new THREE.TorusGeometry(2.5 - i * 0.1, 0.12, 8, 24);
+        const ringMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.2 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = 1.5 + i * 1.5;
+        group.add(ring);
+      }
+
+      // Heated Crucible Core Glow
+      const coreGeo = new THREE.CylinderGeometry(1.5, 1.8, 1.5, 16);
+      const coreMat = new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c, emissiveIntensity: 0.9 });
+      const core = new THREE.Mesh(coreGeo, coreMat);
+      core.position.y = 1.0;
+      group.add(core);
+
+      // Ember pointlight inside furnace
+      const emberLight = new THREE.PointLight(0xff5722, 1.5, 8);
+      emberLight.position.y = 1.5;
+      group.add(emberLight);
+
+      group.position.set(x, y, z);
+      scene.add(group);
+    }
+
+    function createCNCMill(x, y, z) {
+      const group = new THREE.Group();
+      // Cabinet base
+      const baseGeo = new THREE.BoxGeometry(4.5, 3.2, 3.5);
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.6, roughness: 0.4 });
+      const base = new THREE.Mesh(baseGeo, baseMat);
+      base.position.y = 1.6;
+      base.castShadow = true;
+      group.add(base);
+
+      // Inspection Window (Glass)
+      const winGeo = new THREE.BoxGeometry(3.2, 1.5, 0.2);
+      const winMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6, roughness: 0.1 });
+      const win = new THREE.Mesh(winGeo, winMat);
+      win.position.set(0, 1.8, 1.76);
+      group.add(win);
+
+      // Machine Status Light Tower
+      const towerGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 8);
+      const towerMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+      const tower = new THREE.Mesh(towerGeo, towerMat);
+      tower.position.set(1.8, 3.8, -1.2);
+      group.add(tower);
+
+      const bulbGeo = new THREE.SphereGeometry(0.16, 8, 8);
+      const bulbMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 0.8 });
+      const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+      bulb.position.set(1.8, 4.4, -1.2);
+      group.add(bulb);
+
+      group.position.set(x, y, z);
+      scene.add(group);
+    }
+
+    function createRoboticArm(x, y, z) {
+      roboticArmGroup = new THREE.Group();
+
+      // Base Pedestal
+      const baseGeo = new THREE.CylinderGeometry(0.9, 1.1, 0.6, 16);
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7 });
+      const base = new THREE.Mesh(baseGeo, baseMat);
+      base.position.y = 0.3;
+      base.castShadow = true;
+      roboticArmGroup.add(base);
+
+      // Lower Arm
+      const arm1Geo = new THREE.BoxGeometry(0.4, 2.2, 0.4);
+      const armMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 });
+      const arm1 = new THREE.Mesh(arm1Geo, armMat);
+      arm1.position.set(0, 1.5, 0);
+      arm1.rotation.z = 0.25;
+      arm1.castShadow = true;
+      roboticArmGroup.add(arm1);
+
+      // Joint Pivot
+      const pivotGeo = new THREE.SphereGeometry(0.35, 12, 12);
+      const pivotMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
+      const pivot = new THREE.Mesh(pivotGeo, pivotMat);
+      pivot.position.set(-0.35, 2.5, 0);
+      roboticArmGroup.add(pivot);
+
+      // Upper Forearm
+      const arm2Geo = new THREE.BoxGeometry(0.3, 1.8, 0.3);
+      const arm2 = new THREE.Mesh(arm2Geo, armMat);
+      arm2.position.set(0.3, 3.2, 0);
+      arm2.rotation.z = -0.4;
+      arm2.castShadow = true;
+      roboticArmGroup.add(arm2);
+
+      roboticArmGroup.position.set(x, y, z);
+      scene.add(roboticArmGroup);
+    }
+
+    function createSteelColumns() {
+      const colMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.3 });
+      const colPositions = [
+        [-19, 0, -11], [-19, 0, 11], [19, 0, -11], [19, 0, 11],
+        [0, 0, -11], [0, 0, 11]
+      ];
+      colPositions.forEach(pos => {
+        const colGeo = new THREE.BoxGeometry(0.5, 10, 0.5);
+        const col = new THREE.Mesh(colGeo, colMat);
+        col.position.set(pos[0], 5, pos[2]);
+        scene.add(col);
+      });
+    }
+
+    function createBeaconLight(x, y, z) {
+      const group = new THREE.Group();
+      const bulbGeo = new THREE.SphereGeometry(0.35, 12, 12);
+      const bulbMat = new THREE.MeshStandardMaterial({ color: 0x64748b, emissive: 0x000000 });
+      const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+      group.add(bulb);
+
+      const light = new THREE.PointLight(0xff2a5f, 0, 15);
+      group.add(light);
+
+      group.position.set(x, y, z);
+      scene.add(group);
+      return { group, bulb, light };
+    }
+
+    function createTurnstilePillar(x, y, z, color) {
+      const postGeo = new THREE.CylinderGeometry(0.25, 0.25, 2.6, 12);
+      const postMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
+      const post = new THREE.Mesh(postGeo, postMat);
+      post.position.set(x, y + 1.3, z);
+      scene.add(post);
+
+      const beaconGeo = new THREE.SphereGeometry(0.35, 16, 16);
+      const beaconMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.7 });
+      const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+      beacon.position.set(x, y + 2.7, z);
+      scene.add(beacon);
+    }
+
+    function on3DWindowResize() {
+      const container = document.getElementById('threeCanvasContainer');
+      if (!container || !renderer || !camera) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      if (controls) controls.update();
+
+      const time = Date.now() * 0.003;
+
+      // Robotic Arm subtle active motion
+      if (roboticArmGroup) {
+        roboticArmGroup.rotation.y = Math.sin(time * 0.4) * 0.35;
+      }
+
+      // Personnel 3D Avatars breathing bobbing
+      ['z1', 'z2'].forEach(zone => {
+        workerMeshes[zone].forEach((mesh, idx) => {
+          mesh.position.y = 1.0 + Math.sin(time * 1.5 + idx * 1.2) * 0.1;
+        });
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    // --- DYNAMIC 3D WORKER SPAWN / DESPAWN ---
+    function update3DWorkers(zoneKey, count, baseX, alertActive) {
+      const list = workerMeshes[zoneKey];
+      while (list.length > count) {
+        const mesh = list.pop();
+        scene.remove(mesh);
+      }
+      // Positions grid for up to 10 workers per zone
+      const positions = [
+        [0, 2], [-2.5, 1], [2.5, 1], [-3.5, -2], [3.5, -2],
+        [0, -4], [-2.5, -5], [2.5, -5], [-1.2, -1], [1.2, -1]
+      ];
+      while (list.length < count && list.length < 10) {
+        const idx = list.length;
+        const pos = positions[idx % positions.length];
+        const workerGroup = new THREE.Group();
+
+        // High-vis Jacket Body (Capsule geometry approximation)
+        const bodyGeo = new THREE.CylinderGeometry(0.42, 0.48, 1.25, 16);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.castShadow = true;
+        workerGroup.add(body);
+
+        // Head
+        const headGeo = new THREE.SphereGeometry(0.32, 16, 16);
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.3 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 0.95;
+        head.castShadow = true;
+        workerGroup.add(head);
+
+        // Protective Hard Hat Helmet with Brim
+        const hatGeo = new THREE.CylinderGeometry(0.36, 0.38, 0.2, 16);
+        const hatMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+        const hat = new THREE.Mesh(hatGeo, hatMat);
+        hat.position.y = 1.2;
+        workerGroup.add(hat);
+
+        workerGroup.position.set(baseX + pos[0], 1.0, pos[1]);
+        scene.add(workerGroup);
+        list.push(workerGroup);
+      }
+
+      // Update room colors and emergency beacon
+      const beacon = zoneKey === 'z1' ? beaconZ1 : beaconZ2;
+      const roomMesh = zoneKey === 'z1' ? z1RoomMesh : z2RoomMesh;
+      const spotLight = zoneKey === 'z1' ? z1Light : z2Light;
+      const defaultHex = zoneKey === 'z1' ? 0xdbeafe : 0xdcfce7;
+      const defaultLight = zoneKey === 'z1' ? 0x2563eb : 0x059669;
+
+      if (alertActive) {
+        roomMesh.material.color.setHex(0xfecaca);
+        spotLight.color.setHex(0xdc2626);
+        if (beacon) {
+          beacon.bulb.material.color.setHex(0xdc2626);
+          beacon.bulb.material.emissive.setHex(0xdc2626);
+          beacon.bulb.material.emissiveIntensity = 1.0;
+          beacon.light.intensity = 2.0;
+        }
+      } else {
+        roomMesh.material.color.setHex(defaultHex);
+        spotLight.color.setHex(defaultLight);
+        if (beacon) {
+          beacon.bulb.material.color.setHex(0x64748b);
+          beacon.bulb.material.emissive.setHex(0x000000);
+          beacon.bulb.material.emissiveIntensity = 0;
+          beacon.light.intensity = 0;
+        }
+      }
+    }
+
+    // --- 3D CAMERA PRESETS ---
+    function set3DCamera(mode) {
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      if (mode === 'iso') {
+        document.getElementById('btn3dIso').classList.add('active');
+        camera.position.set(24, 22, 28);
+        if (controls) controls.target.set(0, 0, 0);
+      } else if (mode === 'top') {
+        document.getElementById('btn3dTop').classList.add('active');
+        camera.position.set(0, 36, 0.01);
+        if (controls) controls.target.set(0, 0, 0);
+      } else if (mode === 'z1') {
+        document.getElementById('btn3dZ1').classList.add('active');
+        camera.position.set(-9, 13, 16);
+        if (controls) controls.target.set(-9, 0, 0);
+      } else if (mode === 'z2') {
+        document.getElementById('btn3dZ2').classList.add('active');
+        camera.position.set(9, 13, 16);
+        if (controls) controls.target.set(9, 0, 0);
+      }
+    }
+
+    function reset3DCamera() {
+      set3DCamera('iso');
+    }
+
+    // --- AUDIO & VOICE SYNTHESIZER ---
+    function playTone(freq = 880, dur = 0.15) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch (e) {
+        console.warn('Audio tone err:', e);
+      }
+    }
+
+    function speak(text) {
+      if (!voiceActive || !synth) return;
+      try {
+        synth.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1.05;
+        synth.speak(u);
+      } catch (e) {
+        console.warn('TTS err:', e);
+      }
+    }
+
+    function toggleVoice() {
+      voiceActive = !voiceActive;
+      const btn = document.getElementById('voiceBtn');
+      const st = document.getElementById('voiceStatus');
+      if (voiceActive) {
+        btn.classList.add('active');
+        st.textContent = 'ON';
+        speak('Voice assistant activated.');
+      } else {
+        btn.classList.remove('active');
+        st.textContent = 'OFF';
+      }
+    }
+
+    // --- CAPACITY TUNING & EMERGENCY SOS ---
+    async function tuneCapacity(delta) {
+      const newCap = Math.max(5, Math.min(10, currentCapacity + delta));
+      try {
+        await fetch('/api/capacity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ capacity: newCap })
+        });
+        playTone(1200, 0.1);
+        syncData();
+      } catch (e) {
+        console.error('Tune failed:', e);
+      }
+    }
+
+    async function toggleEmergency() {
+      try {
+        const res = await fetch('/api/emergency/toggle', { method: 'POST' });
+        const data = await res.json();
+        if (data.emergency) {
+          playTone(440, 0.5);
+          speak('Emergency evacuation active. Clear all factory floors.');
+        } else {
+          playTone(880, 0.2);
+          speak('Emergency cleared. Resuming nominal operations.');
+        }
+        syncData();
+      } catch (e) {
+        console.error('SOS failed:', e);
+      }
+    }
+
+    function exportCsv() {
+      window.location.href = '/api/export/audit.csv';
+    }
+
+    // --- CANVAS OCCUPANCY CHART ---
+    function drawChart(history) {
+      const canvas = document.getElementById('historyChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      const p = 30;
+      ctx.clearRect(0, 0, w, h);
+
+      const now = Date.now() / 1000;
+      const filtered = history.filter(r => r.ts >= now - 3600);
+
+      // Grid lines
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 5; i++) {
+        let y = p + (h - 2 * p) * i / 4;
+        ctx.beginPath();
+        ctx.moveTo(p, y);
+        ctx.lineTo(w - 10, y);
+        ctx.stroke();
+      }
+
+      const maxVal = Math.max(10, ...filtered.map(r => r.count || 0));
+
+      drawChartLine(filtered.filter(r => r.zone === 1), '#2563eb', maxVal, now, w, h, p, ctx);
+      drawChartLine(filtered.filter(r => r.zone === 2), '#059669', maxVal, now, w, h, p, ctx);
+    }
+
+    function drawChartLine(rows, color, maxVal, now, w, h, p, ctx) {
+      if (!rows.length) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      rows.forEach((r, idx) => {
+        const x = p + (r.ts - (now - 3600)) / 3600 * (w - p - 10);
+        const y = h - p - ((r.count || 0) / maxVal) * (h - 2 * p);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    // --- MAIN DATA SYNC LOOP ---
+    async function syncData() {
+      try {
+        const [sr, ar, hr] = await Promise.all([
+          fetch('/api/state'),
+          fetch('/api/analytics'),
+          fetch('/api/history')
+        ]);
+
+        if (!sr.ok || !ar.ok) throw new Error('API offline');
+
+        const state = await sr.json();
+        const analytics = await ar.json();
+        const history = await hr.json();
+
+        // Header & Sync Time
+        document.getElementById('serverBadge').style.borderColor = 'var(--green-border)';
+        document.getElementById('serverStatusText').textContent = 'LAN ENGINE ONLINE';
+        document.getElementById('footerSync').textContent = `LAST SYNC: ${new Date().toLocaleTimeString()}`;
+
+        // Emergency Strobe
+        if (state.emergency) {
+          document.body.classList.add('emergency-active');
+          document.getElementById('sosBtn').textContent = 'CANCEL EVACUATION';
+        } else {
+          document.body.classList.remove('emergency-active');
+          document.getElementById('sosBtn').textContent = 'EMERGENCY SOS';
+        }
+
+        // Safety Score Radial Gauge
+        const score = state.safety_score;
+        document.getElementById('scoreVal').textContent = score;
+        const ring = document.getElementById('scoreRing');
+        ring.style.strokeDashoffset = 440 - (440 * score / 100);
+
+        if (score >= 90) ring.style.stroke = 'var(--green)';
+        else if (score >= 70) ring.style.stroke = 'var(--blue)';
+        else if (score >= 50) ring.style.stroke = 'var(--amber)';
+        else ring.style.stroke = 'var(--red)';
+
+        const tierEl = document.getElementById('scoreTierBadge');
+        tierEl.textContent = state.safety_tier;
+        tierEl.style.background = score >= 75 ? 'var(--green-subtle)' : 'var(--red-subtle)';
+        tierEl.style.color = score >= 75 ? 'var(--green)' : 'var(--red)';
+
+        const bd = state.safety_breakdown;
+        document.getElementById('bdOcc').textContent = `${bd.occupancy}%`;
+        document.getElementById('bdTherm').textContent = `${bd.thermal}%`;
+        document.getElementById('bdLight').textContent = `${bd.lighting}%`;
+        document.getElementById('bdConn').textContent = `${bd.connectivity}%`;
+
+        // KPI Strip & Dynamic Environmental Capacities (5 - 10 Scale)
+        const baseCap = state.base_capacity || 10;
+        currentCapacity = baseCap;
+        document.getElementById('kpiTotal').textContent = state.total_workers;
+        document.getElementById('kpiCap').textContent = baseCap;
+        document.querySelectorAll('.base-cap-span').forEach(el => el.textContent = baseCap);
+
+        const dynCaps = state.dynamic_capacities || [baseCap, baseCap];
+        const dynDetails = state.dynamic_details || [];
+
+        // Zone 1 Dynamic Limits
+        const z1D = dynDetails[0] || {};
+        document.getElementById('z1DynCap').textContent = dynCaps[0];
+        document.getElementById('z1DynStatus').textContent = z1D.status || 'ACTIVE';
+        document.getElementById('z1DynStatus').style.background = z1D.total_penalty > 0 ? 'var(--amber-subtle)' : 'var(--blue-subtle)';
+        document.getElementById('z1DynStatus').style.color = z1D.total_penalty > 0 ? 'var(--amber)' : 'var(--blue)';
+        document.getElementById('z1Occupancy').textContent = state.counts[0];
+        document.getElementById('z1OccupancyMax').textContent = dynCaps[0];
+
+        const z1List = document.getElementById('z1PenaltiesList');
+        if (z1D.penalties && z1D.penalties.length > 0) {
+          z1List.innerHTML = z1D.penalties.map(p => 
+            `<div style="color: var(--amber); font-weight: 500;">[REDUCTION ${p.delta}] ${p.factor}: ${p.desc}</div>`
+          ).join('');
+        } else {
+          z1List.innerHTML = `<div style="color: var(--green);">[OPTIMAL] Nominal room conditions: Full 10 capacity permitted.</div>`;
+        }
+
+        // Zone 2 Dynamic Limits
+        const z2D = dynDetails[1] || {};
+        document.getElementById('z2DynCap').textContent = dynCaps[1];
+        document.getElementById('z2DynStatus').textContent = z2D.status || 'ACTIVE';
+        document.getElementById('z2DynStatus').style.background = z2D.total_penalty > 0 ? 'var(--amber-subtle)' : 'var(--green-subtle)';
+        document.getElementById('z2DynStatus').style.color = z2D.total_penalty > 0 ? 'var(--amber)' : 'var(--green)';
+        document.getElementById('z2Occupancy').textContent = state.counts[1];
+        document.getElementById('z2OccupancyMax').textContent = dynCaps[1];
+
+        const z2List = document.getElementById('z2PenaltiesList');
+        if (z2D.penalties && z2D.penalties.length > 0) {
+          z2List.innerHTML = z2D.penalties.map(p => 
+            `<div style="color: var(--amber); font-weight: 500;">[REDUCTION ${p.delta}] ${p.factor}: ${p.desc}</div>`
+          ).join('');
+        } else {
+          z2List.innerHTML = `<div style="color: var(--green);">[OPTIMAL] Nominal room conditions: Full 10 capacity permitted.</div>`;
+        }
+
+        const alertCount = state.alerts.filter(Boolean).length;
+        document.getElementById('kpiAlertCount').textContent = alertCount;
+        const pill = document.getElementById('kpiAlertPill');
+        if (alertCount > 0) {
+          pill.textContent = 'OVERCROWDING';
+          pill.style.color = 'var(--red)';
+        } else {
+          pill.textContent = 'NOMINAL';
+          pill.style.color = 'var(--green)';
+        }
+
+        const onlineCount = state.online.filter(Boolean).length;
+        document.getElementById('kpiNodes').textContent = `${onlineCount}/2`;
+        document.getElementById('kpiNodesSub').textContent = 
+          `Node 1: ${state.online[0] ? 'ONLINE' : 'OFFLINE'} · Node 2: ${state.online[1] ? 'ONLINE' : 'OFFLINE'}`;
+
+        // 3D Visualizer Updates (Live 3D Worker Avatars)
+        update3DWorkers('z1', state.counts[0], -9, state.alerts[0]);
+        update3DWorkers('z2', state.counts[1], 9, state.alerts[1]);
+
+        // Zone 1 Telemetry
+        const s1 = state.sensors[0];
+        if (s1) {
+          document.getElementById('z1Temp').textContent = s1.temp != null ? `${s1.temp}°C` : '--';
+          document.getElementById('z1Hum').textContent = s1.hum != null ? `${s1.hum}%` : '--';
+          document.getElementById('z1Heat').textContent = s1.heat_index != null ? `${s1.heat_index}°C` : '--';
+          document.getElementById('z1Light').textContent = s1.ldr != null ? s1.ldr : '--';
+          document.getElementById('z1HeatBadge').textContent = s1.heat_level;
+          document.getElementById('z1LightBadge').textContent = s1.light_eval;
+          document.getElementById('z1Advice').textContent = `${s1.heat_desc} · ${s1.light_desc}`;
+        }
+
+        // Zone 2 Telemetry
+        const s2 = state.sensors[1];
+        if (s2) {
+          document.getElementById('z2Temp').textContent = s2.temp != null ? `${s2.temp}°C` : '--';
+          document.getElementById('z2Hum').textContent = s2.hum != null ? `${s2.hum}%` : '--';
+          document.getElementById('z2Heat').textContent = s2.heat_index != null ? `${s2.heat_index}°C` : '--';
+          document.getElementById('z2Light').textContent = s2.ldr != null ? s2.ldr : '--';
+          document.getElementById('z2HeatBadge').textContent = s2.heat_level;
+          document.getElementById('z2LightBadge').textContent = s2.light_eval;
+          document.getElementById('z2Advice').textContent = `${s2.heat_desc} · ${s2.light_desc}`;
+        }
+
+        // ML Predictions
+        if (analytics && analytics.zones) {
+          const z1ML = analytics.zones[0]?.ml;
+          const z2ML = analytics.zones[1]?.ml;
+          if (z1ML && z2ML) {
+            document.getElementById('ml5m').textContent = (z1ML.forecast[0] + z2ML.forecast[0]).toFixed(1);
+            document.getElementById('ml10m').textContent = (z1ML.forecast[1] + z2ML.forecast[1]).toFixed(1);
+            document.getElementById('ml15m').textContent = (z1ML.forecast[2] + z2ML.forecast[2]).toFixed(1);
+            document.getElementById('ml30m').textContent = (z1ML.forecast[3] + z2ML.forecast[3]).toFixed(1);
+
+            const avgConf = Math.round((z1ML.confidence + z2ML.confidence) / 2);
+            document.getElementById('mlConf').textContent = `${avgConf}%`;
+            const surge = z1ML.surge_risk || z2ML.surge_risk;
+            document.getElementById('mlRisk').textContent = surge ? 'HIGH' : 'NOMINAL';
+            document.getElementById('mlRisk').style.color = surge ? 'var(--red)' : 'var(--blue)';
+          }
+        }
+
+        // Activity Stream & Audio Announce on New Entry
+        if (state.events && state.events.length > 0) {
+          const topE = state.events[0];
+          const topKey = `${topE.ts}:${topE.kind}:${topE.count}`;
+          if (lastEventSeen && lastEventSeen !== topKey) {
+            playTone(topE.kind === 'ENTRY' ? 1046 : 659, 0.15);
+            if (topE.kind === 'ENTRY') {
+              speak(`${topE.worker_name} entered Zone ${topE.zone}.`);
+            } else if (topE.kind === 'EXIT') {
+              speak(`Worker exited Zone ${topE.zone}.`);
+            }
+          }
+          lastEventSeen = topKey;
+
+          const feedList = document.getElementById('eventFeed');
+          feedList.innerHTML = '';
+          state.events.slice(0, 15).forEach(e => {
+            const li = document.createElement('li');
+            li.className = 'feed-row';
+            const isEntry = e.kind === 'ENTRY';
+            const typeClass = isEntry ? 'type-entry' : (e.kind === 'ALARM' ? 'type-alarm' : 'type-exit');
+            const timeStr = new Date(e.ts * 1000).toLocaleTimeString();
+
+            // Initials badge
+            const initials = e.worker_name ? e.worker_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'FW';
+
+            li.innerHTML = `
+              <div class="feed-meta">
+                <div class="avatar-initials">${initials}</div>
+                <div>
+                  <div class="feed-user">${e.worker_name}</div>
+                  <div class="feed-details">Zone ${e.zone || 'All'} · Occupancy: ${e.count} · ID: ${e.worker_id}</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="feed-type ${typeClass}">${e.kind}</span>
+                <span class="feed-timestamp">${timeStr}</span>
+              </div>
+            `;
+            feedList.appendChild(li);
+          });
+        }
+
+        // 2D Canvas Chart
+        drawChart(history);
+
+      } catch (err) {
+        console.warn('Sync err:', err);
+        document.getElementById('serverBadge').style.borderColor = 'var(--red-border)';
+        document.getElementById('serverStatusText').textContent = 'SERVER DISCONNECTED';
+      }
+    }
+
+    // Initialize 3D & Telemetry loop
+    window.addEventListener('DOMContentLoaded', () => {
+      init3DScene();
+      syncData();
+      setInterval(syncData, 2000);
+    });
+  </script>
+</body>
+</html>
