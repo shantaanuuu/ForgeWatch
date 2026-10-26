@@ -14,10 +14,10 @@ from machine import Pin, ADC
 
 # ---------------- CONFIG ----------------
 
-SSID = "TP-Link_4728"
-PASSWORD = "sanskar@3515"
+SSID = "Pixel"
+PASSWORD = "11111111"
 
-SERVER_IP = "192.168.1.104"
+SERVER_IP = "10.230.141.149"
 SERVER_PORT = 8000
 DEVICE_KEY = "demo-change-me"
 
